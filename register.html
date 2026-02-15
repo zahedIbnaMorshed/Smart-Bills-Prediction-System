@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Register - Smart Bills</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+    <div class="card">
+
+        <!-- Logo -->
+        <img src="assests/main logo.jpeg" class="logo">
+
+        <h2>Create Account</h2>
+        <p class="subtitle">Join Smart Bills</p>
+
+        <form id="registerForm">
+
+            <div class="row">
+                <input type="text" placeholder="First Name" required>
+                <input type="text" placeholder="Last Name" required>
+            </div>
+
+            <input type="email" placeholder="Email Address" required>
+            <input type="password" placeholder="Password" required>
+
+            <label>Date of Birth</label>
+            <input type="date" required>
+
+            <label>Gender</label>
+            <div class="gender">
+                <label><input type="radio" name="gender"> Male</label>
+                <label><input type="radio" name="gender"> Female</label>
+                <label><input type="radio" name="gender"> Other</label>
+            </div>
+
+            <button type="submit">Register</button>
+        </form>
+
+        <p class="link">
+            Already have an account?
+            <a href="/">Login</a>
+        </p>
+
+    </div>
+</div>
+
+<script src="/static/script.js"></script>
+</body>
+</html>
