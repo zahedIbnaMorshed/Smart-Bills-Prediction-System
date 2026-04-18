@@ -1,0 +1,57 @@
+/* Global CSS placeholder */
+/* Desktop */
+.nav-desktop {
+    display: flex;
+    gap: 6px;
+}
+
+/* Mobile hidden by default */
+.nav-mobile {
+    display: none;
+}
+
+/* Mobile open */
+.nav-mobile.open {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 64px;
+    left: 0;
+    right: 0;
+    background: var(--bg2);
+    padding: 16px;
+    gap: 8px;
+    z-index: 200;
+}
+
+/* Mobile buttons */
+.nav-mobile button {
+    background: none;
+    border: none;
+    padding: 12px;
+    text-align: left;
+    color: var(--muted);
+    font-weight: 600;
+}
+
+/* Hamburger */
+.menu-btn {
+    display: none;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 7px 10px;
+    border-radius: var(--r3);
+    font-size: 16px;
+}
+
+/* Responsive */
+@media(max-width:640px) {
+    .nav-desktop {
+        display: none;
+    }
+
+    .menu-btn {
+        display: block;
+    }
+}
