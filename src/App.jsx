@@ -1396,3 +1396,52 @@ function FeedbackPage({ user, feedbacks, addFeedback, toast$, t, lang }) {
     </div>
   );
 }
+// ── REPORT MODALS ─────────────────────────────────────────────────────
+function Modal({ onClose, children }) {
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 999, padding: 12 }} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal-inner" style={{ background: "var(--card)", borderRadius: "var(--r)", padding: 24, width: "100%", maxWidth: 720, maxHeight: "92vh", overflowY: "auto", boxShadow: "0 24px 80px rgba(0,0,0,.5)" }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function ElecReport({ result, onClose, t, lang }) {
+  const { bill, breakdown, totalKwh, provider, days, sanctionedLoad } = result;
+  const top = breakdown.reduce((a, b) => Number(a.kwh) > Number(b.kwh) ? a : b, breakdown[0]);
+
+  const dl = () => {
+    const dRows = breakdown.map(d => `<tr><td>${d.icon} ${lang === "bn" ? d.bn : d.en}</td><td>${d.watts}W</td><td>${d.hours}h</td><td>${d.qty}</td><td>${d.kwh} kWh</td></tr>`).join("");
+    const sRows = bill.slabs.map(s => `<tr><td>${lang === "bn" ? s.bn : s.en}</td><td>${s.units}</td><td>৳${s.rate}</td><td>৳${s.cost}</td></tr>`).join("");
+    const html = `<!DOCTYPE html><html lang="${lang}"><head><meta charset="UTF-8"><title>BidyutBill</title><style>body{font-family:'Segoe UI',sans-serif;padding:36px;max-width:850px;margin:auto;background:#f8fafc;color:#0f172a}.hdr{background:#0f172a;color:#fff;padding:20px 28px;border-radius:12px;margin-bottom:20px}.hdr h1{color:#f59e0b;margin:0}.bx{background:#0f172a;border:2px solid #f59e0b;border-radius:12px;padding:20px;text-align:center;margin-bottom:20px}.amt{font-size:42px;font-weight:900;color:#f59e0b}table{width:100%;border-collapse:collapse}th{background:#0f172a;color:#f59e0b;padding:9px 12px;text-align:left}td{padding:9px 12px;border-bottom:1px solid #e2e8f0;font-size:13px}</style></head><body>
+<div class="hdr"><h1>⚡ Smart Bill Predictions</h1><p>${provider} · ${days} days · ${fmtDt(Date.now(), lang)}</p></div>
+<div class="bx"><div>Total Estimated Bill</div><div class="amt">৳${Number(bill.total).toFixed(2)}</div><div>${totalKwh} kWh · ${sanctionedLoad} kW</div></div>
+<h2>Slab Breakdown</h2><table><thead><tr><th>Slab</th><th>Units</th><th>Rate</th><th>Cost</th></tr></thead><tbody>${sRows}</tbody></table>
+<h2>Device Breakdown</h2><table><thead><tr><th>Device</th><th>Watts</th><th>Hours</th><th>Qty</th><th>kWh</th></tr></thead><tbody>${dRows}</tbody></table>
+<p style="color:#94a3b8;font-size:11px;margin-top:20px">Smart Bill Predictions · BERC Tariff · ID: BB-${Date.now()}</p></body></html>`;
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([html], { type: "text/html;charset=utf-8" })); a.download = `BidyutBill_Elec_${Date.now()}.html`; a.click();
+  };
+
+  return (
+    <Modal onClose={onClose}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 18 }}>
+        <div>
+          <h2 style={{ fontSize: 18, fontWeight: 900, color: "var(--elec)" }}>⚡ {lang === "bn" ? "বিদ্যুৎ বিল রিপোর্ট" : "Electricity Bill Report"}</h2>
+          <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 3 }}>{fmtDt(Date.now(), lang)} · {provider} · {days} {t.days}</div>
+        </div>
+        <button onClick={onClose} style={{ background: "var(--bg3)", border: "none", borderRadius: "var(--r3)", width: 34, height: 34, fontSize: 16, color: "var(--muted)", flexShrink: 0 }}>✕</button>
+      </div>
+      <div style={{ background: "var(--bg2)", borderRadius: "var(--r3)", padding: "18px 14px", textAlign: "center", marginBottom: 16, border: "2px solid var(--elec)" }}>
+        <div style={{ fontSize: 12, color: "var(--muted)", letterSpacing: 1 }}>{lang === "bn" ? "মোট আনুমানিক বিল" : "Total Estimated Bill"}</div>
+        <div style={{ fontSize: 36, fontWeight: 900, color: "var(--elec)", margin: "6px 0" }}>{fmtBDT(bill.total, lang)}</div>
+        <div style={{ fontSize: 12, color: "var(--dim)" }}>{totalKwh} kWh · {breakdown.length} {lang === "bn" ? "ডিভাইস" : "devices"} · {sanctionedLoad} kW</div>
+      </div>
+      <div className="report-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8, marginBottom: 12 }}>
+        {[[t.energyCharge, bill.energy], [t.demandCharge, bill.demand], [t.serviceCharge, bill.svcChg], [t.meterRent, bill.meterRent], [t.vat, bill.vat], [t.totalBill, bill.total, true]].map(([l, v, acc]) => (
+          <div key={l} style={{ background: acc ? "var(--bg2)" : "var(--bg3)", border: `1.5px solid ${acc ? "var(--elec)" : "var(--border)"}`, borderRadius: "var(--r3)", padding: "10px 12px", textAlign: "center" }}>
+            <div style={{ fontSize: 10, color: "var(--dim)", textTransform: "uppercase", letterSpacing: .5 }}>{l}</div>
+            <div style={{ fontSize: acc ? 16 : 13, fontWeight: 800, color: acc ? "var(--elec)" : "var(--text)", marginTop: 4 }}>{fmtBDT(v, lang)}</div>
+          </div>
+        ))}
+      </div>
