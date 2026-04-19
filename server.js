@@ -76,3 +76,40 @@ const User      = mongoose.model('User',       UserSchema);
 const History   = mongoose.model('History',    HistorySchema);
 const Feedback  = mongoose.model('Feedback',   FeedbackSchema);
 const ResetToken = mongoose.model('ResetToken', ResetTokenSchema);
+// ── Helper ────────────────────────────────────────────────────────────
+function sha256(str) {
+  return crypto.createHash('sha256').update(str).digest('hex');
+}
+
+// ── AUTH ROUTES ───────────────────────────────────────────────────────
+
+// POST /api/auth/register
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { id, name, email, phone, district, passwordHash, otp, joinDate, provider, sanctionedLoad, gasProvider } = req.body;
+    const existing = await User.findOne({ email: email.toLowerCase() });
+    if (existing) return res.status(409).json({ error: 'Email already registered.' });
+    const user = new User({ _id: id, name, email, phone, district, passwordHash, emailVerified: false, otp, joinDate, provider: provider || '', sanctionedLoad: sanctionedLoad || 2, gasProvider: gasProvider || '' });
+    await user.save();
+    const u = user.toObject();
+    u.id = u._id; delete u._id; delete u.__v;
+    res.json({ user: u });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// POST /api/auth/login
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, passwordHash } = req.body;
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) return res.status(404).json({ error: 'Email not registered.' });
+    if (user.passwordHash !== passwordHash) return res.status(401).json({ error: 'Wrong password.' });
+    const u = user.toObject();
+    u.id = u._id; delete u._id; delete u.__v;
+    res.json({ user: u });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
