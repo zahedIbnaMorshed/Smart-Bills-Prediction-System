@@ -682,3 +682,28 @@ function HomePage({ go, t, lang }) {
     </div>
   );
 }
+
+// ── AUTH WRAPPER ──────────────────────────────────────────────────────
+function AuthWrap({ icon, title, sub, children }) {
+  return (
+    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "calc(100vh - 64px)", padding: 20 }}>
+      <div className="anim" style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "var(--r)", padding: 32, width: "100%", maxWidth: 480, boxShadow: "var(--shadow)" }}>
+        <div style={{ fontSize: 48, textAlign: "center", marginBottom: 6 }}>{icon}</div>
+        <h2 style={{ fontSize: 22, fontWeight: 900, textAlign: "center", marginBottom: 4 }}>{title}</h2>
+        <p style={{ fontSize: 13, color: "var(--muted)", textAlign: "center", marginBottom: 22 }}>{sub}</p>
+        {children}
+      </div>
+    </div>
+  );
+}
+const Abtn = ({ onClick, disabled, children, color }) => (
+  <button onClick={onClick} disabled={disabled} style={{ width: "100%", background: color || "var(--green)", color: "#fff", border: "none", padding: "13px", borderRadius: "var(--r3)", fontSize: 15, fontWeight: 800, marginTop: 4 }}>
+    {children}
+  </button>
+);
+const Fi = ({ label, type = "text", value, onChange, ph }) => (
+  <div style={{ marginBottom: 14 }}>
+    {label && <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--dim)", textTransform: "uppercase", letterSpacing: .6, marginBottom: 6 }}>{label}</label>}
+    <input type={type} value={value} onChange={onChange} placeholder={ph || ""} />
+  </div>
+);
