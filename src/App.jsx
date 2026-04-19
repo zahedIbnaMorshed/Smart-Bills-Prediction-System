@@ -565,3 +565,61 @@ function Nav({ user, page, go, logout, t, lang, toggleLang, menuOpen, setMenuOpe
     </nav>
   );
 }
+// ── TOAST ─────────────────────────────────────────────────────────────
+function Toast({ msg, type }) {
+  return <div className="toast" style={{ background: type === "err" ? "#991b1b" : type === "warn" ? "#92400e" : "#166534" }}>{msg}</div>;
+}
+
+// ── HOME PAGE ─────────────────────────────────────────────────────────
+function HomePage({ go, t, lang }) {
+  const features = [
+    {
+      icon: "⚡", title: lang === "bn" ? "সঠিক বিল হিসাব" : "Accurate Bill Calc",
+      desc: lang === "bn" ? "BERC অনুমোদিত LT-A স্ল্যাব অনুযায়ী বিদ্যুৎ বিল হিসাব।" : "Electricity bills calculated per BERC-approved LT-A slabs.", color: "var(--elec)"
+    },
+    {
+      icon: "🔥", title: lang === "bn" ? "গ্যাস বিল" : "Gas Bill",
+      desc: lang === "bn" ? "তিতাস থেকে সুন্দরবন পর্যন্ত সব গ্যাস কোম্পানির ট্যারিফ।" : "Tariffs from Titas to Sundarban gas companies.", color: "var(--gas)"
+    },
+    {
+      icon: "📡", title: lang === "bn" ? "লাইভ রেট আপডেট" : "Live Rate Updates",
+      desc: lang === "bn" ? "বিতরণ কোম্পানি মূল্য পরিবর্তন করলে স্বয়ংক্রিয়ভাবে আপডেট হয়।" : "Auto-updates when providers change electricity/gas prices.", color: "var(--green2)"
+    },
+    {
+      icon: "📊", title: lang === "bn" ? "বিল ইতিহাস" : "Bill History",
+      desc: lang === "bn" ? "সব হিসাব সংরক্ষিত থাকে। যেকোনো সময় দেখুন।" : "All calculations saved. View anytime.", color: "#60a5fa"
+    },
+    {
+      icon: "📄", title: lang === "bn" ? "PDF রিপোর্ট" : "PDF Report",
+      desc: lang === "bn" ? "বিস্তারিত বিল রিপোর্ট ডাউনলোড করুন।" : "Download detailed bill reports.", color: "#a78bfa"
+    },
+    {
+      icon: "🔒", title: lang === "bn" ? "নিরাপদ অ্যাকাউন্ট" : "Secure Account",
+      desc: lang === "bn" ? "SHA-256 এনক্রিপশন ও IndexedDB স্টোরেজ।" : "SHA-256 encrypted passwords with IndexedDB storage.", color: "#34d399"
+    },
+  ];
+
+  return (
+    <div>
+      {/* Hero */}
+      <section style={{ background: "linear-gradient(135deg,#0b0f1a 0%,#0d1929 50%,#0b1a0f 100%)", padding: "80px 20px 64px", textAlign: "center", position: "relative", overflow: "hidden" }}>
+        <div style={{ position: "absolute", top: -120, right: -120, width: 500, height: 500, borderRadius: "50%", background: "radial-gradient(circle,rgba(22,163,74,.14),transparent 65%)", pointerEvents: "none" }} />
+        <div style={{ position: "absolute", bottom: -80, left: -80, width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle,rgba(245,158,11,.1),transparent 65%)", pointerEvents: "none" }} />
+        <div style={{ position: "relative", maxWidth: 700, margin: "0 auto" }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(22,163,74,.12)", border: "1px solid rgba(74,222,128,.2)", padding: "6px 18px", borderRadius: 20, fontSize: 12, fontWeight: 700, color: "var(--green2)", marginBottom: 20 }}>
+            ⚡ BERC Approved · বিইআরসি অনুমোদিত
+          </div>
+          <h1 className="hero-h1 anim" style={{ fontSize: "clamp(26px,5vw,52px)", fontWeight: 900, color: "#fff", lineHeight: 1.15, marginBottom: 16 }}>
+            {t.heroTitle}
+          </h1>
+          <p style={{ fontSize: 15, color: "var(--muted)", lineHeight: 1.8, marginBottom: 32 }}>{t.heroSub}</p>
+          <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+            <button onClick={() => go("predict")} style={{ background: "var(--elec)", color: "#000", border: "none", padding: "13px 28px", borderRadius: "var(--r2)", fontSize: 15, fontWeight: 800, boxShadow: "0 4px 20px rgba(245,158,11,.35)" }}>
+              ⚡ {lang === "bn" ? "বিদ্যুৎ বিল" : "Electricity Bill"}
+            </button>
+            <button onClick={() => go("gas")} style={{ background: "var(--gas)", color: "#fff", border: "none", padding: "13px 28px", borderRadius: "var(--r2)", fontSize: 15, fontWeight: 800, boxShadow: "0 4px 20px rgba(249,115,22,.3)" }}>
+              🔥 {lang === "bn" ? "গ্যাস বিল" : "Gas Bill"}
+            </button>
+          </div>
+        </div>
+      </section>
