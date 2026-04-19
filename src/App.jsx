@@ -707,3 +707,36 @@ const Fi = ({ label, type = "text", value, onChange, ph }) => (
     <input type={type} value={value} onChange={onChange} placeholder={ph || ""} />
   </div>
 );
+
+// ── LOGIN ─────────────────────────────────────────────────────────────
+function LoginPage({ login, toast$, go, t, lang }) {
+  const [f, setF] = useState({ email: "", pass: "" });
+  const [loading, setLoading] = useState(false);
+  const submit = async () => {
+    if (!f.email || !f.pass) { toast$(lang === "bn" ? "সব তথ্য পূরণ করুন।" : "Fill all fields.", "err"); return; }
+    setLoading(true);
+    try {
+      const passwordHash = await hashPass(f.pass);
+      const d = await apiFetch("/auth/login", { method: "POST", body: JSON.stringify({ email: f.email.toLowerCase().trim(), passwordHash }) });
+      await login(d.user); toast$(`${t.loginSuccess}, ${d.user.name}! 🎉`); go("predict");
+    } catch (e) {
+      const msg = e.message.includes("not registered") ? (lang === "bn" ? "ইমেইল নিবন্ধিত নয়।" : "Email not registered.") : e.message.includes("Wrong") ? (lang === "bn" ? "পাসওয়ার্ড ভুল।" : "Wrong password.") : String(e.message);
+      toast$(msg, "err");
+    }
+    setLoading(false);
+  };
+  return (
+    <AuthWrap icon="⚡" title={t.loginTitle} sub={lang === "bn" ? "আপনার BidyutBill অ্যাকাউন্টে প্রবেশ করুন" : "Access your BidyutBill account"}>
+      <Fi label={t.email} type="email" value={f.email} onChange={e => setF({ ...f, email: e.target.value })} ph="you@example.com" />
+      <Fi label={t.password} type="password" value={f.pass} onChange={e => setF({ ...f, pass: e.target.value })} ph="••••••••" />
+      <div style={{ textAlign: "right", marginBottom: 12 }}>
+        <span style={{ color: "var(--green2)", cursor: "pointer", fontSize: 13, fontWeight: 600 }} onClick={() => go("forgot")}>{t.forgotPassword}</span>
+      </div>
+      <Abtn onClick={submit} disabled={loading}>{loading ? (lang === "bn" ? "লগইন হচ্ছে…" : "Logging in…") : t.login}</Abtn>
+      <p style={{ textAlign: "center", fontSize: 13, color: "var(--muted)", marginTop: 14 }}>
+        {lang === "bn" ? "অ্যাকাউন্ট নেই?" : "No account?"}{" "}
+        <span style={{ color: "var(--green2)", cursor: "pointer", fontWeight: 700 }} onClick={() => go("register")}>{t.register}</span>
+      </p>
+    </AuthWrap>
+  );
+}
