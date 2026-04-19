@@ -1140,3 +1140,165 @@ function ElecPage({ user, addHistory, toast$, t, lang }) {
     </div>
   );
 }
+
+// ── GAS PAGE ──────────────────────────────────────────────────────────
+function GasPage({ user, addHistory, toast$, t, lang }) {
+  const [meterType, setMeterType] = useState("nonmetered");
+  const [burner, setBurner] = useState("double");
+  const [appl, setAppl] = useState([]);
+  const [prov, setProv] = useState(() => GAS_PROVIDERS.find(p => p.id === (user.gasProvider || "titas")) || GAS_PROVIDERS[0]);
+  const [days, setDays] = useState(30);
+  const [result, setResult] = useState(null);
+  const [tariff, setTariff] = useState(null);
+  const [fetching, setFetching] = useState(false);
+  const [srcLabel, setSrcLabel] = useState(null);
+
+  const fetchRate = async () => {
+    setFetching(true);
+    const r = await fetchLiveGas(prov.id);
+    setTariff(r);
+    const sl = r.source === "live-api" ? "live" : r.source === "cache" ? "cache" : "builtin";
+    setSrcLabel(sl);
+    const msgs = { bn: { live: "লাইভ গ্যাস রেট আপডেট! ✅", cache: "ক্যাশড রেট লোড।", builtin: "ডিফল্ট রেট।" }, en: { live: "Live gas rate updated! ✅", cache: "Cached rate loaded.", builtin: "Using default rate." } };
+    toast$(msgs[lang][sl], sl === "live" ? "ok" : "warn");
+    setFetching(false);
+  };
+
+  useEffect(() => { fetchRate(); }, [prov.id]);
+
+  const addAppl = (a) => setAppl(p => [...p, { id: gid(), bn: a.bn, en: a.en, icon: a.icon, m3ph: a.m3ph, hours: 2, qty: 1, custom: a.m3ph === 0 }]);
+  const upd = (id, f, v) => setAppl(p => p.map(x => x.id === id ? { ...x, [f]: v } : x));
+  const rem = (id) => setAppl(p => p.filter(x => x.id !== id));
+
+  const ratePrepaid = tariff?.ratePrepaid ?? D_GAS_PREP;
+  const fixedSingle = tariff?.fixedSingle ?? D_GAS_FIX.single.m;
+  const fixedDouble = tariff?.fixedDouble ?? D_GAS_FIX.double.m;
+
+  const calc = async () => {
+    let rec;
+    if (meterType === "nonmetered") {
+      const monthly = burner === "single" ? fixedSingle : fixedDouble;
+      const assumed_m3 = (burner === "single" ? D_GAS_FIX.single.m3 : D_GAS_FIX.double.m3);
+      const scaled = (monthly / 30) * days, vat = scaled * (tariff?.vat ?? D_VAT), total = scaled + vat;
+      rec = { id: gid(), type: "gas", subtype: "nonmetered", userId: user.id, userName: user.name, provider: lang === "bn" ? prov.bn : prov.en, days, burner, fixedMonthly: monthly, scaledBill: scaled.toFixed(2), scaledM3: ((assumed_m3 / 30) * days).toFixed(1), vat: vat.toFixed(2), total: total.toFixed(2), date: Date.now(), appliances: [], tariffSource: tariff?.source || "builtin" };
+    } else {
+      if (!appl.length) { toast$(lang === "bn" ? "কমপক্ষে একটি যন্ত্র যোগ করুন।" : "Add at least one appliance.", "err"); return; }
+      let totalM3 = 0;
+      const breakdown = appl.map(a => { const m3 = a.m3ph * a.qty * a.hours * days; totalM3 += m3; return { ...a, m3: m3.toFixed(2) }; });
+      const bill = calcGas(totalM3, tariff);
+      rec = { id: gid(), type: "gas", subtype: "prepaid", userId: user.id, userName: user.name, provider: lang === "bn" ? prov.bn : prov.en, days, totalM3: totalM3.toFixed(2), bill, appliances: breakdown, date: Date.now(), tariffSource: tariff?.source || "builtin" };
+    }
+    await addHistory(rec); setResult(rec);
+    toast$(lang === "bn" ? "গ্যাস বিল হিসাব সম্পন্ন! 🔥" : "Gas bill calculated! 🔥");
+  };
+
+  return (
+    <div className="page">
+      <div style={{ textAlign: "center", marginBottom: 24 }} className="anim">
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(249,115,22,.1)", border: "1px solid var(--gas)", borderRadius: 20, padding: "6px 18px", marginBottom: 12, fontSize: 13, fontWeight: 700, color: "var(--gas)" }}>
+          🔥 {lang === "bn" ? "গ্যাস বিল পূর্বাভাস" : "Gas Bill Calculator"}
+        </div>
+        <h1 style={{ fontSize: 28, fontWeight: 900 }}>{t.gas} {lang === "bn" ? "বিল হিসাব" : "Bill"}</h1>
+      </div>
+
+      <Card>
+        <CardTitle accent="var(--gas)">🔥 {lang === "bn" ? "সংস্থা ও মিটার ধরন" : "Provider & Meter Type"}</CardTitle>
+        <div className="grid2" style={{ marginBottom: 16 }}>
+          <div>
+            <label style={lblStyle}>{lang === "bn" ? "গ্যাস বিতরণ কোম্পানি" : "Gas Distribution Company"}</label>
+            <select value={prov.id} onChange={e => setProv(GAS_PROVIDERS.find(p => p.id === e.target.value))}>
+              {GAS_PROVIDERS.map(p => <option key={p.id} value={p.id}>{lang === "bn" ? p.bn : p.en} — {lang === "bn" ? p.areaBn : p.areaEn}</option>)}
+            </select>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+            <button onClick={fetchRate} disabled={fetching} style={{ background: "none", border: "1.5px solid var(--gas)", color: "var(--gas)", padding: "10px 14px", borderRadius: "var(--r3)", fontWeight: 700, fontSize: 13 }}>
+              {fetching ? <span className="pulse">{t.fetching}</span> : t.fetchRate}
+            </button>
+          </div>
+        </div>
+        {srcLabel && (
+          <div style={{ marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 12, color: "var(--dim)" }}>{t.rateSource}:</span>
+            <span className={`src-${srcLabel}`}>{lang === "bn" ? (srcLabel === "live" ? "লাইভ" : srcLabel === "cache" ? "ক্যাশড" : "ডিফল্ট") : (srcLabel === "live" ? "Live" : srcLabel === "cache" ? "Cached" : "Default")}</span>
+          </div>
+        )}
+        <div style={{ marginBottom: 14 }}>
+          <label style={lblStyle}>{t.billingDays}: {days} {t.days}</label>
+          <input type="range" min={7} max={60} value={days} onChange={e => setDays(Number(e.target.value))} style={{ accentColor: "var(--gas)", width: "100%", marginTop: 8 }} />
+        </div>
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+          {[["nonmetered", `📄 ${t.nonMetered}`], ["prepaid", `📊 ${t.prepaid} (৳${ratePrepaid}/m³)`]].map(([v, l]) => (
+            <button key={v} onClick={() => setMeterType(v)} style={{ flex: 1, minWidth: 140, padding: "12px", borderRadius: "var(--r3)", fontWeight: 700, fontSize: 13, border: `2px solid ${meterType === v ? "var(--gas)" : "var(--border)"}`, background: meterType === v ? "rgba(249,115,22,.1)" : "var(--bg3)", color: meterType === v ? "var(--gas)" : "var(--muted)" }}>
+              {l}
+            </button>
+          ))}
+        </div>
+      </Card>
+
+      {meterType === "nonmetered" && (
+        <Card>
+          <CardTitle accent="var(--gas)">🍳 {lang === "bn" ? "বার্নার ধরন বেছে নিন" : "Choose Burner Type"}</CardTitle>
+          <div className="grid2" style={{ marginBottom: 16 }}>
+            {[["single", "🔥", t.singleBurner, `৳${fixedSingle}/${lang === "bn" ? "মাস" : "month"}`], ["double", "🔥🔥", t.doubleBurner, `৳${fixedDouble}/${lang === "bn" ? "মাস" : "month"}`]].map(([v, em, l, price]) => (
+              <button key={v} onClick={() => setBurner(v)} style={{ padding: 20, borderRadius: "var(--r3)", fontWeight: 700, border: `2px solid ${burner === v ? "var(--gas)" : "var(--border)"}`, background: burner === v ? "rgba(249,115,22,.1)" : "var(--bg3)", textAlign: "center" }}>
+                <div style={{ fontSize: 32, marginBottom: 8 }}>{em}</div>
+                <div style={{ fontWeight: 800, color: burner === v ? "var(--gas)" : "var(--text)" }}>{l}</div>
+                <div style={{ fontSize: 18, fontWeight: 900, color: "var(--gas)", marginTop: 4 }}>{price}</div>
+              </button>
+            ))}
+          </div>
+          <div style={{ background: "rgba(249,115,22,.08)", border: "1px solid rgba(249,115,22,.3)", borderRadius: "var(--r3)", padding: 14, fontSize: 13, color: "var(--gas)" }}>
+            <strong>{lang === "bn" ? "তথ্য" : "Info"}:</strong> {lang === "bn" ? `${days} দিনের আনুমানিক বিল:` : `Estimated bill for ${days} days:`} <strong>{fmtBDT(((burner === "single" ? fixedSingle : fixedDouble) / 30) * days * (1 + (tariff?.vat ?? D_VAT)), lang)}</strong> (VAT {lang === "bn" ? "সহ" : "included"})
+          </div>
+        </Card>
+      )}
+
+      {meterType === "prepaid" && (
+        <>
+          <Card>
+            <CardTitle accent="var(--gas)">⚙️ {t.addAppliance}</CardTitle>
+            <div className="grid-auto">
+              {GAS_APPLIANCES.map(a => (
+                <button key={a.bn} onClick={() => addAppl(a)} title={lang === "bn" ? a.bn : a.en}
+                  style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "10px 4px", background: "var(--bg3)", border: "1.5px solid var(--border)", borderRadius: "var(--r3)", fontSize: 10, color: "var(--muted)", fontWeight: 600 }}>
+                  <span style={{ fontSize: 22 }}>{a.icon}</span>
+                  <span style={{ textAlign: "center", lineHeight: 1.3, fontSize: 10 }}>{lang === "bn" ? a.bn : a.en}</span>
+                  <span style={{ color: "var(--gas)", fontWeight: 700, fontSize: 10 }}>{a.m3ph} m³/h</span>
+                </button>
+              ))}
+            </div>
+          </Card>
+          {appl.length > 0 && (
+            <Card>
+              <CardTitle accent="var(--gas)">🔥 {lang === "bn" ? "যন্ত্রপাতি" : "Appliances"} ({appl.length}) · {lang === "bn" ? "মোট" : "Total"}: {appl.reduce((s, a) => s + (a.m3ph * a.qty * a.hours * days), 0).toFixed(2)} m³</CardTitle>
+              {appl.map(a => (
+                <div key={a.id} style={{ display: "flex", gap: 12, alignItems: "flex-start", background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: "var(--r3)", padding: 12, marginBottom: 8 }}>
+                  <div style={{ fontSize: 26 }}>{a.icon}</div>
+                  <div style={{ flex: 1 }}>
+                    {a.custom ? <input style={{ marginBottom: 4, padding: "5px 8px", fontSize: 13, width: "100%" }} value={lang === "bn" ? a.bn : a.en} onChange={e => upd(a.id, lang === "bn" ? "bn" : "en", e.target.value)} placeholder={lang === "bn" ? "যন্ত্রের নাম" : "Appliance name"} /> : <div style={{ fontWeight: 700, fontSize: 13 }}>{lang === "bn" ? a.bn : a.en}</div>}
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 6, alignItems: "center" }}>
+                      <NumIn l="m³/h" v={a.m3ph} min={0} step={0.05} onChange={v => upd(a.id, "m3ph", v)} />
+                      <NumIn l={lang === "bn" ? "ঘণ্টা/দিন" : "Hr/day"} v={a.hours} min={0} max={24} step={.5} onChange={v => upd(a.id, "hours", v)} />
+                      <NumIn l={lang === "bn" ? "সংখ্যা" : "Qty"} v={a.qty} min={1} onChange={v => upd(a.id, "qty", v)} />
+                    </div>
+                  </div>
+                  <div style={{ textAlign: "right", display: "flex", flexDirection: "column", gap: 6 }}>
+                    <div style={{ fontSize: 12, color: "var(--gas)", fontWeight: 700 }}>{(a.m3ph * a.qty * a.hours * days).toFixed(2)} m³</div>
+                    <button onClick={() => rem(a.id)} style={{ background: "rgba(220,38,38,.15)", color: "#f87171", border: "none", borderRadius: 6, width: 26, height: 26, fontWeight: 700, fontSize: 12 }}>✕</button>
+                  </div>
+                </div>
+              ))}
+            </Card>
+          )}
+        </>
+      )}
+
+      <div style={{ textAlign: "center", marginBottom: 32 }}>
+        <button onClick={calc} style={{ background: "var(--gas)", color: "#fff", border: "none", padding: "14px 48px", borderRadius: "var(--r2)", fontSize: 16, fontWeight: 900, boxShadow: "0 4px 20px rgba(249,115,22,.3)" }}>
+          🔥 {t.calculate}
+        </button>
+      </div>
+      {result && <GasReport result={result} onClose={() => setResult(null)} t={t} lang={lang} />}
+    </div>
+  );
+}
