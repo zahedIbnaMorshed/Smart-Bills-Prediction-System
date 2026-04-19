@@ -1482,3 +1482,41 @@ function GasReport({ result, onClose, t, lang }) {
 <p style="color:#94a3b8;font-size:11px;margin-top:20px">Smart Bill Predictions · BERC Gas Tariff · ID: BG-${Date.now()}</p></body></html>`;
     const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([html], { type: "text/html;charset=utf-8" })); a.download = `BidyutBill_Gas_${Date.now()}.html`; a.click();
   };
+
+  return (
+    <Modal onClose={onClose}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 18 }}>
+        <div>
+          <h2 style={{ fontSize: 18, fontWeight: 900, color: "var(--gas)" }}>🔥 {lang === "bn" ? "গ্যাস বিল রিপোর্ট" : "Gas Bill Report"}</h2>
+          <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 3 }}>{fmtDt(Date.now(), lang)} · {result.provider} · {result.days} {t.days}</div>
+        </div>
+        <button onClick={onClose} style={{ background: "var(--bg3)", border: "none", borderRadius: "var(--r3)", width: 34, height: 34, fontSize: 16, color: "var(--muted)" }}>✕</button>
+      </div>
+      <div style={{ background: "var(--bg2)", borderRadius: "var(--r3)", padding: "18px 14px", textAlign: "center", marginBottom: 16, border: "2px solid var(--gas)" }}>
+        <div style={{ fontSize: 12, color: "var(--muted)", letterSpacing: 1 }}>{lang === "bn" ? "মোট আনুমানিক গ্যাস বিল" : "Total Estimated Gas Bill"}</div>
+        <div style={{ fontSize: 36, fontWeight: 900, color: "var(--gas)", margin: "6px 0" }}>{fmtBDT(total, lang)}</div>
+        <div style={{ fontSize: 12, color: "var(--dim)" }}>{isNM ? (result.burner === "single" ? t.singleBurner : t.doubleBurner) + " · " + (lang === "bn" ? "মিটারবিহীন" : "Non-metered") : `${result.totalM3} m³ · ${lang === "bn" ? "প্রি-পেইড" : "Pre-paid"}`}</div>
+      </div>
+      {!isNM && result.bill && (
+        <div className="report-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8, marginBottom: 12 }}>
+          {[[lang === "bn" ? "শক্তি চার্জ" : "Energy", result.bill.energy], [t.meterRent, result.bill.meterRent], [t.vat, result.bill.vat], [t.totalBill, result.bill.total, true]].map(([l, v, acc]) => (
+            <div key={l} style={{ background: acc ? "var(--bg2)" : "var(--bg3)", border: `1.5px solid ${acc ? "var(--gas)" : "var(--border)"}`, borderRadius: "var(--r3)", padding: "10px 12px", textAlign: "center" }}>
+              <div style={{ fontSize: 10, color: "var(--dim)", textTransform: "uppercase", letterSpacing: .5 }}>{l}</div>
+              <div style={{ fontSize: acc ? 16 : 13, fontWeight: 800, color: acc ? "var(--gas)" : "var(--text)", marginTop: 4 }}>{fmtBDT(v, lang)}</div>
+            </div>
+          ))}
+        </div>
+      )}
+      <div style={{ background: "rgba(249,115,22,.08)", border: "1px solid rgba(249,115,22,.25)", borderRadius: "var(--r3)", padding: 14, marginTop: 10 }}>
+        <h4 style={{ fontSize: 13, color: "var(--gas)", margin: "0 0 8px" }}>💡 {t.savingsTitle}</h4>
+        <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12, color: "var(--muted)", lineHeight: 1.9 }}>
+          {(lang === "bn" ? ["প্রেশার কুকার ব্যবহার করুন।", "রান্না শেষে চুলা বন্ধ করুন।", "প্রি-পেইড মিটার ব্যবহার করুন।", "গ্যাস পাইপ লিক পরীক্ষা করুন।"] : ["Use a pressure cooker.", "Turn off stove after cooking.", "Switch to pre-paid meter.", "Check gas pipes for leaks."]).map((tip, i) => <li key={i}>{tip}</li>)}
+        </ul>
+      </div>
+      <div style={{ display: "flex", gap: 10, marginTop: 18, flexWrap: "wrap" }}>
+        <button onClick={dl} style={{ background: "var(--gas)", color: "#fff", border: "none", padding: "11px 20px", borderRadius: "var(--r3)", fontWeight: 700, fontSize: 14 }}>{t.download}</button>
+        <button onClick={onClose} style={{ background: "var(--bg3)", color: "var(--muted)", border: "none", padding: "11px 20px", borderRadius: "var(--r3)", fontWeight: 700, fontSize: 14 }}>{t.close}</button>
+      </div>
+    </Modal>
+  );
+}
