@@ -1302,3 +1302,34 @@ function GasPage({ user, addHistory, toast$, t, lang }) {
     </div>
   );
 }
+// ── HISTORY ───────────────────────────────────────────────────────────
+function HistoryPage({ history, t, lang }) {
+  const [sel, setSel] = useState(null);
+  return (
+    <div className="page">
+      <h1 style={{ fontSize: 28, fontWeight: 900, marginBottom: 20, textAlign: "center" }}>{t.history}</h1>
+      {history.length === 0 ? (
+        <div style={{ textAlign: "center", padding: 72, color: "var(--muted)" }}>{t.noHistory}</div>
+      ) : (
+        history.map(r => (
+          <div key={r.id} onClick={() => setSel(sel?.id === r.id ? null : r)}
+            style={{ background: "var(--card)", border: `1px solid var(--border)`, borderLeft: `4px solid ${r.type === "electricity" ? "var(--elec)" : "var(--gas)"}`, borderRadius: "var(--r3)", padding: 16, marginBottom: 10, cursor: "pointer", transition: "border-color .2s" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 24 }}>{r.type === "electricity" ? "⚡" : "🔥"}</span>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 14 }}>{r.provider}</div>
+                  <div style={{ fontSize: 12, color: "var(--muted)" }}>{fmtDt(r.date, lang)} · {r.days} {t.days}</div>
+                </div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: 20, fontWeight: 900, color: r.type === "electricity" ? "var(--elec)" : "var(--gas)" }}>{fmtBDT(r.type === "electricity" ? r.bill?.total : r.total || r.bill?.total, lang)}</div>
+                <div style={{ fontSize: 11, color: "var(--dim)" }}>{r.tariffSource === "live-api" ? (lang === "bn" ? "লাইভ রেট" : "Live rate") : r.tariffSource === "cache" ? (lang === "bn" ? "ক্যাশড" : "Cached") : (lang === "bn" ? "ডিফল্ট" : "Default")}</div>
+              </div>
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
