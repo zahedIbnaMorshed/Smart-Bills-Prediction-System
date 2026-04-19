@@ -792,3 +792,86 @@ function RegisterPage({ login, toast$, go, t, lang }) {
     </AuthWrap>
   );
 }
+
+// ── FORGOT / RESET / VERIFY (condensed) ──────────────────────────────
+function ForgotPage({ toast$, go, t, lang }) {
+  const [email, setEmail] = useState(""); const [sent, setSent] = useState(false); const [loading, setLoading] = useState(false);
+  const send = async () => {
+    if (!email) { toast$(lang === "bn" ? "ইমেইল দিন।" : "Enter email.", "err"); return; }
+    setLoading(true);
+    try {
+      const d = await apiFetch("/reset/send", { method: "POST", body: JSON.stringify({ email: email.toLowerCase().trim() }) });
+      ls.s("bd_reset_token", d.token);
+      toast$(`OTP: ${d.token} (${lang === "bn" ? "১৫ মিনিট" : "15 min"})`); setSent(true);
+    } catch (e) {
+      toast$(e.message.includes("not registered") ? (lang === "bn" ? "ইমেইল নিবন্ধিত নয়।" : "Email not registered.") : String(e.message), "err");
+    }
+    setLoading(false);
+  };
+  return (
+    <AuthWrap icon="🔑" title={t.forgotPassword} sub={lang === "bn" ? "আপনার নিবন্ধিত ইমেইলে OTP পাঠানো হবে" : "OTP will be sent to your registered email"}>
+      {sent ? (
+        <div style={{ background: "rgba(22,163,74,.1)", border: "1px solid var(--green)", borderRadius: "var(--r3)", padding: 20, textAlign: "center" }}>
+          <div style={{ fontSize: 40, marginBottom: 8 }}>📧</div>
+          <p style={{ color: "var(--green2)", fontWeight: 600, marginBottom: 12 }}>OTP {lang === "bn" ? "পাঠানো হয়েছে" : "sent"}!</p>
+          <Abtn onClick={() => go("reset")}>{lang === "bn" ? "OTP দিয়ে রিসেট করুন →" : "Reset with OTP →"}</Abtn>
+        </div>
+      ) : (
+        <>
+          <Fi label={t.email} type="email" value={email} onChange={e => setEmail(e.target.value)} ph="you@example.com" />
+          <Abtn onClick={send} disabled={loading}>{loading ? (lang === "bn" ? "পাঠানো হচ্ছে…" : "Sending…") : t.sendOtp}</Abtn>
+        </>
+      )}
+      <p style={{ textAlign: "center", marginTop: 14, fontSize: 13, color: "var(--muted)" }}>
+        <span style={{ color: "var(--green2)", cursor: "pointer" }} onClick={() => go("login")}>← {t.login}</span>
+      </p>
+    </AuthWrap>
+  );
+}
+function ResetPage({ toast$, go, t, lang }) {
+  const [f, setF] = useState({ otp: "", pass: "", confirm: "" }); const [loading, setLoading] = useState(false);
+  const reset = async () => {
+    if (!f.otp || !f.pass) { toast$(lang === "bn" ? "OTP ও পাসওয়ার্ড দিন।" : "Enter OTP & password.", "err"); return; }
+    if (f.pass !== f.confirm) { toast$(lang === "bn" ? "পাসওয়ার্ড মিলছে না।" : "Passwords don't match.", "err"); return; }
+    setLoading(true);
+    try {
+      const newPasswordHash = await hashPass(f.pass);
+      await apiFetch("/reset/verify", { method: "POST", body: JSON.stringify({ token: f.otp.trim(), newPasswordHash }) });
+      toast$(lang === "bn" ? "পাসওয়ার্ড পরিবর্তিত হয়েছে! 🎉" : "Password changed! 🎉"); go("login");
+    } catch (e) {
+      toast$(e.message.includes("Invalid") ? (lang === "bn" ? "OTP সঠিক/মেয়াদোত্তীর্ণ নয়।" : "Invalid/expired OTP.") : String(e.message), "err");
+    }
+    setLoading(false);
+  };
+  return (
+    <AuthWrap icon="🔐" title={t.resetPassword} sub="OTP + new password">
+      <Fi label="OTP" value={f.otp} onChange={e => setF({ ...f, otp: e.target.value })} ph={lang === "bn" ? "৬ সংখ্যার OTP" : "6-digit OTP"} />
+      <Fi label={lang === "bn" ? "নতুন পাসওয়ার্ড" : "New Password"} type="password" value={f.pass} onChange={e => setF({ ...f, pass: e.target.value })} ph="••••••••" />
+      <Fi label={lang === "bn" ? "পাসওয়ার্ড নিশ্চিত" : "Confirm"} type="password" value={f.confirm} onChange={e => setF({ ...f, confirm: e.target.value })} ph="••••••••" />
+      <Abtn onClick={reset} disabled={loading}>{loading ? (lang === "bn" ? "পরিবর্তন হচ্ছে…" : "Changing…") : t.resetPassword}</Abtn>
+    </AuthWrap>
+  );
+}
+function VerifyPage({ user, updateUser, toast$, go, t, lang }) {
+  const [code, setCode] = useState("");
+  const verify = async () => {
+    if (!user) { go("login"); return; }
+    if (code.trim() === user.otp) {
+      await updateUser({ ...user, emailVerified: true, otp: "" });
+      toast$(lang === "bn" ? "ইমেইল যাচাই সফল! 🎉" : "Email verified! 🎉"); go("predict");
+    }
+    else toast$(lang === "bn" ? "কোড সঠিক নয়।" : "Incorrect code.", "err");
+  };
+  return (
+    <AuthWrap icon="📧" title={t.verifyEmail} sub={lang === "bn" ? "নিবন্ধনের সময় পাঠানো ৬-সংখ্যার OTP দিন" : "Enter the 6-digit OTP sent during registration"}>
+      <div style={{ background: "rgba(22,163,74,.08)", border: "1px solid var(--green)", borderRadius: "var(--r3)", padding: 12, fontSize: 13, color: "var(--green2)", marginBottom: 14 }}>
+        💡 {lang === "bn" ? "ডেমো: Toast নোটিফিকেশনে OTP দেখুন" : "Demo: Check Toast notification for OTP"}
+      </div>
+      <Fi label="OTP" value={code} onChange={e => setCode(e.target.value)} ph={lang === "bn" ? "৬ সংখ্যার কোড" : "6-digit code"} />
+      <Abtn onClick={verify}>{t.verifyEmail}</Abtn>
+      <p style={{ textAlign: "center", marginTop: 12, fontSize: 13 }}>
+        <span style={{ color: "var(--green2)", cursor: "pointer" }} onClick={() => go("predict")}>{lang === "bn" ? "এখন বাদ দিন →" : "Skip for now →"}</span>
+      </p>
+    </AuthWrap>
+  );
+}
