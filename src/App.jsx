@@ -1520,3 +1520,14 @@ function GasReport({ result, onClose, t, lang }) {
     </Modal>
   );
 }
+// ── SHARED MICRO COMPONENTS ───────────────────────────────────────────
+function Card({ children }) {
+  return <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "var(--r)", padding: 20, marginBottom: 16 }}>{children}</div>;
+}
+function CardTitle({ children, accent }) {
+  return <h3 style={{ fontSize: 14, fontWeight: 800, color: accent || "var(--text)", margin: "0 0 14px", borderLeft: `3px solid ${accent || "var(--green)"}`, paddingLeft: 10 }}>{children}</h3>;
+}
+function NumIn({ l, v, min, max, step = 1, onChange }) {
+  return <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--muted)" }}>{l}<input type="number" min={min} max={max} step={step} value={v} onChange={e => onChange(Number(e.target.value))} style={{ width: 60, padding: "4px 6px", fontSize: 13 }} /></label>;
+}
+const lblStyle = { display: "block", fontSize: 11, fontWeight: 700, color: "var(--dim)", textTransform: "uppercase", letterSpacing: .6, marginBottom: 6 };
