@@ -1445,3 +1445,40 @@ function ElecReport({ result, onClose, t, lang }) {
           </div>
         ))}
       </div>
+      <h3 style={{ fontSize: 13, fontWeight: 800, margin: "16px 0 8px" }}>{t.slabBreakdown}</h3>
+      <div style={{ border: "1px solid var(--border)", borderRadius: "var(--r3)", overflow: "hidden", marginBottom: 8 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", background: "var(--bg2)" }}>
+          {[lang === "bn" ? "স্ল্যাব" : "Slab", lang === "bn" ? "ইউনিট" : "Units", lang === "bn" ? "রেট" : "Rate", lang === "bn" ? "চার্জ" : "Cost"].map(h => <div key={h} style={{ padding: "8px 10px", fontSize: 11, color: "var(--elec)", fontWeight: 700 }}>{h}</div>)}
+        </div>
+        {bill.slabs.map((r, i) => (
+          <div key={i} style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", borderBottom: "1px solid var(--border)" }}>
+            {[lang === "bn" ? r.bn : r.en, r.units, `৳${r.rate}`, <b style={{ color: "var(--elec)" }}>৳{r.cost}</b>].map((v, j) => <div key={j} style={{ padding: "8px 10px", fontSize: 12, color: "var(--muted)" }}>{v}</div>)}
+          </div>
+        ))}
+      </div>
+      <div style={{ background: "rgba(245,158,11,.08)", border: "1px solid rgba(245,158,11,.25)", borderRadius: "var(--r3)", padding: 14, marginTop: 14 }}>
+        <h4 style={{ fontSize: 13, color: "var(--elec)", margin: "0 0 8px" }}>💡 {t.savingsTitle}</h4>
+        {top && <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>{lang === "bn" ? "সবচেয়ে বেশি ব্যবহার" : "Highest usage"}: <strong>{lang === "bn" ? top.bn : top.en}</strong></p>}
+        <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12, color: "var(--muted)", lineHeight: 1.9 }}>
+          {(lang === "bn" ? ["LED বাল্ব ব্যবহার করুন — ৮০% সাশ্রয়।", "AC ২৪-২৬°C রাখুন।", "ব্যবহার না হলে সুইচ বন্ধ রাখুন।"] : ["Use LED bulbs — save 80%.", "Keep AC at 24-26°C.", "Switch off when not in use."]).map((tip, i) => <li key={i}>{tip}</li>)}
+        </ul>
+      </div>
+      <div style={{ display: "flex", gap: 10, marginTop: 18, flexWrap: "wrap" }}>
+        <button onClick={dl} style={{ background: "var(--elec)", color: "#000", border: "none", padding: "11px 20px", borderRadius: "var(--r3)", fontWeight: 700, fontSize: 14 }}>{t.download}</button>
+        <button onClick={onClose} style={{ background: "var(--bg3)", color: "var(--muted)", border: "none", padding: "11px 20px", borderRadius: "var(--r3)", fontWeight: 700, fontSize: 14 }}>{t.close}</button>
+      </div>
+    </Modal>
+  );
+}
+
+function GasReport({ result, onClose, t, lang }) {
+  const isNM = result.subtype === "nonmetered";
+  const total = isNM ? result.total : result.bill?.total;
+
+  const dl = () => {
+    const html = `<!DOCTYPE html><html lang="${lang}"><head><meta charset="UTF-8"><title>BidyutBill Gas</title><style>body{font-family:'Segoe UI',sans-serif;padding:36px;max-width:850px;margin:auto;background:#f8fafc}.hdr{background:#0f172a;color:#fff;padding:20px;border-radius:12px;margin-bottom:20px}.hdr h1{color:#f97316;margin:0}.bx{background:#0f172a;border:2px solid #f97316;border-radius:12px;padding:20px;text-align:center;margin-bottom:20px}.amt{font-size:42px;font-weight:900;color:#f97316}</style></head><body>
+<div class="hdr"><h1>🔥 Smart Bill Predictions</h1><p>${result.provider} · ${result.days} days · ${fmtDt(Date.now(), lang)}</p></div>
+<div class="bx"><div>Total Estimated Gas Bill</div><div class="amt">৳${Number(total).toFixed(2)}</div></div>
+<p style="color:#94a3b8;font-size:11px;margin-top:20px">Smart Bill Predictions · BERC Gas Tariff · ID: BG-${Date.now()}</p></body></html>`;
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([html], { type: "text/html;charset=utf-8" })); a.download = `BidyutBill_Gas_${Date.now()}.html`; a.click();
+  };
