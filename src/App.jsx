@@ -740,3 +740,55 @@ function LoginPage({ login, toast$, go, t, lang }) {
     </AuthWrap>
   );
 }
+
+// ── REGISTER ──────────────────────────────────────────────────────────
+function RegisterPage({ login, toast$, go, t, lang }) {
+  const [f, setF] = useState({ name: "", email: "", phone: "", pass: "", confirm: "", district: "" });
+  const [loading, setLoading] = useState(false);
+  const districts = lang === "bn"
+    ? ["ঢাকা", "চট্টগ্রাম", "রাজশাহী", "খুলনা", "বরিশাল", "সিলেট", "রংপুর", "ময়মনসিংহ", "কুমিল্লা", "গাজীপুর", "নারায়ণগঞ্জ", "বগুড়া", "যশোর", "অন্যান্য"]
+    : ["Dhaka", "Chittagong", "Rajshahi", "Khulna", "Barishal", "Sylhet", "Rangpur", "Mymensingh", "Cumilla", "Gazipur", "Narayanganj", "Bogura", "Jessore", "Other"];
+
+  const submit = async () => {
+    if (!f.name || !f.email || !f.phone || !f.pass) { toast$(lang === "bn" ? "নাম, ইমেইল, ফোন ও পাসওয়ার্ড আবশ্যক।" : "Name, email, phone & password required.", "err"); return; }
+    if (!/^\S+@\S+\.\S+/.test(f.email)) { toast$(lang === "bn" ? "সঠিক ইমেইল দিন।" : "Enter valid email.", "err"); return; }
+    if (!/^01[3-9]\d{8}$/.test(f.phone.replace(/\s/g, ""))) { toast$(lang === "bn" ? "সঠিক বাংলাদেশী নম্বর দিন।" : "Enter valid BD number.", "err"); return; }
+    if (f.pass.length < 6) { toast$(lang === "bn" ? "পাসওয়ার্ড কমপক্ষে ৬ অক্ষর।" : "Password min 6 chars.", "err"); return; }
+    if (f.pass !== f.confirm) { toast$(lang === "bn" ? "পাসওয়ার্ড মিলছে না।" : "Passwords don't match.", "err"); return; }
+    setLoading(true);
+    try {
+      const hash = await hashPass(f.pass);
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const nu = { id: gid(), name: f.name.trim(), email: f.email.toLowerCase().trim(), phone: f.phone.trim(), district: f.district, passwordHash: hash, emailVerified: false, otp, joinDate: Date.now(), provider: "", sanctionedLoad: 2, gasProvider: "" };
+      const d = await apiFetch("/auth/register", { method: "POST", body: JSON.stringify(nu) });
+      await login(d.user);
+      toast$(`${t.registrationSuccess} OTP: ${otp}`); go("verify");
+    } catch (e) {
+      const msg = e.message.includes("already") ? (lang === "bn" ? "এই ইমেইল ইতিমধ্যে নিবন্ধিত।" : "Email already registered.") : String(e.message);
+      toast$(msg, "err");
+    }
+    setLoading(false);
+  };
+  return (
+    <AuthWrap icon="🌟" title={t.registerTitle} sub={lang === "bn" ? "বিনামূল্যে অ্যাকাউন্ট তৈরি করুন" : "Create your free account"}>
+      <div className="grid2"><Fi label={t.name} value={f.name} onChange={e => setF({ ...f, name: e.target.value })} ph={lang === "bn" ? "আপনার নাম" : "Your name"} /><Fi label={t.phone} value={f.phone} onChange={e => setF({ ...f, phone: e.target.value })} ph="01XXXXXXXXX" /></div>
+      <Fi label={t.email} type="email" value={f.email} onChange={e => setF({ ...f, email: e.target.value })} ph="you@example.com" />
+      <div style={{ marginBottom: 14 }}>
+        <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--dim)", textTransform: "uppercase", letterSpacing: .6, marginBottom: 6 }}>{t.district}</label>
+        <select value={f.district} onChange={e => setF({ ...f, district: e.target.value })}>
+          <option value="">{lang === "bn" ? "জেলা বেছে নিন" : "Select district"}</option>
+          {districts.map(d => <option key={d}>{d}</option>)}
+        </select>
+      </div>
+      <div className="grid2">
+        <Fi label={t.password} type="password" value={f.pass} onChange={e => setF({ ...f, pass: e.target.value })} ph={lang === "bn" ? "কমপক্ষে ৬ অক্ষর" : "Min 6 chars"} />
+        <Fi label={lang === "bn" ? "পাসওয়ার্ড নিশ্চিত" : "Confirm Password"} type="password" value={f.confirm} onChange={e => setF({ ...f, confirm: e.target.value })} ph={lang === "bn" ? "পুনরায় লিখুন" : "Repeat"} />
+      </div>
+      <Abtn onClick={submit} disabled={loading}>{loading ? (lang === "bn" ? "তৈরি হচ্ছে…" : "Creating…") : (lang === "bn" ? "অ্যাকাউন্ট তৈরি করুন" : "Create Account")}</Abtn>
+      <p style={{ textAlign: "center", fontSize: 13, color: "var(--muted)", marginTop: 14 }}>
+        {lang === "bn" ? "ইতিমধ্যে অ্যাকাউন্ট আছে?" : "Already have an account?"}{" "}
+        <span style={{ color: "var(--green2)", cursor: "pointer", fontWeight: 700 }} onClick={() => go("login")}>{t.login}</span>
+      </p>
+    </AuthWrap>
+  );
+}
