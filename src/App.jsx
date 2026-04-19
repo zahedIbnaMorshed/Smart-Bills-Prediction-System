@@ -623,3 +623,62 @@ function HomePage({ go, t, lang }) {
           </div>
         </div>
       </section>
+
+      {/* Tariff tables */}
+      <section className="tariff-split" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
+        <div style={{ background: "#0d1a2e", padding: "36px 28px" }}>
+          <h3 style={{ color: "var(--elec)", marginBottom: 16, fontSize: 16 }}>⚡ {lang === "bn" ? "বিদ্যুৎ ট্যারিফ (LT-A, Feb 2024)" : "Electricity Tariff (LT-A, Feb 2024)"}</h3>
+          {D_ELEC_SLABS.map((s, i) => (
+            <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid var(--border)", fontSize: 13 }}>
+              <span style={{ color: "var(--muted)" }}>{lang === "bn" ? s.bn : s.en}</span>
+              <span style={{ color: "var(--elec)", fontWeight: 700 }}>৳{s.rate}/{lang === "bn" ? "ইউনিট" : "unit"}</span>
+            </div>
+          ))}
+          <div style={{ marginTop: 10, fontSize: 12, color: "var(--dim)" }}>+{lang === "bn" ? "ডিমান্ড চার্জ" : "Demand"} ৳{D_DEMAND}/kW · 5% VAT</div>
+        </div>
+        <div style={{ background: "#0d1a14", padding: "36px 28px" }}>
+          <h3 style={{ color: "var(--gas)", marginBottom: 16, fontSize: 16 }}>🔥 {lang === "bn" ? "গ্যাস ট্যারিফ (BERC 2024)" : "Gas Tariff (BERC 2024)"}</h3>
+          {[
+            [lang === "bn" ? "প্রি-পেইড মিটার" : "Pre-paid Meter", `৳${D_GAS_PREP}/${lang === "bn" ? "ঘনমিটার" : "m³"}`],
+            [lang === "bn" ? "একটি বার্নার" : "Single Burner", `৳${D_GAS_FIX.single.m}/${lang === "bn" ? "মাস" : "month"}`],
+            [lang === "bn" ? "দুটি বার্নার" : "Double Burner", `৳${D_GAS_FIX.double.m}/${lang === "bn" ? "মাস" : "month"}`],
+            [lang === "bn" ? "মিটার ভাড়া" : "Meter Rent", `৳${D_MRENT_G}/${lang === "bn" ? "মাস" : "month"}`],
+            ["VAT", "5%"],
+          ].map(([l, v]) => (
+            <div key={l} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid var(--border)", fontSize: 13 }}>
+              <span style={{ color: "var(--muted)" }}>{l}</span>
+              <span style={{ color: "var(--gas)", fontWeight: 700 }}>{v}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Features */}
+      <section style={{ padding: "52px 20px", maxWidth: 1060, margin: "0 auto" }}>
+        <h2 style={{ fontSize: 26, fontWeight: 900, textAlign: "center", marginBottom: 32, color: "var(--text)" }}>
+          {lang === "bn" ? "সম্পূর্ণ সুবিধা" : "Full Features"}
+        </h2>
+        <div className="grid-feat">
+          {features.map(f => (
+            <div key={f.title} style={{ background: "var(--card)", border: `1px solid var(--border)`, borderTop: `3px solid ${f.color}`, borderRadius: "var(--r)", padding: 20 }}>
+              <div style={{ fontSize: 32, marginBottom: 10 }}>{f.icon}</div>
+              <h3 style={{ fontSize: 14, fontWeight: 800, color: f.color, marginBottom: 8 }}>{f.title}</h3>
+              <p style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.65 }}>{f.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section style={{ background: "var(--bg2)", padding: "52px 20px", textAlign: "center", borderTop: "1px solid var(--border)" }}>
+        <h2 style={{ fontSize: 26, fontWeight: 900, marginBottom: 10 }}>{lang === "bn" ? "আজই শুরু করুন" : "Get Started Today"}</h2>
+        <p style={{ color: "var(--muted)", marginBottom: 24, fontSize: 14 }}>
+          {lang === "bn" ? "বিনামূল্যে অ্যাকাউন্ট খুলুন" : "Create a free account"}
+        </p>
+        <button onClick={() => go("register")} style={{ background: "var(--green)", color: "#fff", border: "none", padding: "13px 30px", borderRadius: "var(--r2)", fontSize: 15, fontWeight: 800, boxShadow: "0 4px 18px rgba(22,163,74,.35)" }}>
+          {lang === "bn" ? "বিনামূল্যে নিবন্ধন করুন" : "Register for Free"}
+        </button>
+      </section>
+    </div>
+  );
+}
