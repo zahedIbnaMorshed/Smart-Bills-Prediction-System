@@ -180,3 +180,62 @@ app.post('/api/reset/verify', async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
+// ── HISTORY ROUTES ────────────────────────────────────────────────────
+
+// POST /api/history  (add one record)
+app.post('/api/history', async (req, res) => {
+  try {
+    const rec = req.body; // { id, userId, userName, type, date, ...rest }
+    await History.create({ _id: rec.id, userId: rec.userId, userName: rec.userName, type: rec.type, date: rec.date, data: rec });
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// GET /api/history/:userId
+app.get('/api/history/:userId', async (req, res) => {
+  try {
+    const docs = await History.find({ userId: req.params.userId }).sort({ date: -1 }).limit(200);
+    const records = docs.map(d => d.data);
+    res.json({ records });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── FEEDBACK ROUTES ───────────────────────────────────────────────────
+
+// POST /api/feedback
+app.post('/api/feedback', async (req, res) => {
+  try {
+    const rec = req.body;
+    await Feedback.create({ _id: rec.id, userId: rec.userId, userName: rec.userName, date: rec.date, data: rec });
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// GET /api/feedback/:userId
+app.get('/api/feedback/:userId', async (req, res) => {
+  try {
+    const docs = await Feedback.find({ userId: req.params.userId }).sort({ date: -1 });
+    const records = docs.map(d => d.data);
+    res.json({ records });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── HEALTH CHECK ──────────────────────────────────────────────────────
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', db: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected' });
+});
+
+// ── START ─────────────────────────────────────────────────────────────
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`🔗 Health: http://localhost:${PORT}/api/health`);
+});
