@@ -1333,3 +1333,66 @@ function HistoryPage({ history, t, lang }) {
     </div>
   );
 }
+// ── FEEDBACK ──────────────────────────────────────────────────────────
+function FeedbackPage({ user, feedbacks, addFeedback, toast$, t, lang }) {
+  const [f, setF] = useState({ rating: 5, cat: "general", msg: "" });
+  const [sub, setSub] = useState(false);
+  const cats = lang === "bn"
+    ? ["সাধারণ", "বিদ্যুৎ বিল", "গ্যাস বিল", "UI/ডিজাইন", "প্রযুক্তিগত", "অন্যান্য"]
+    : ["General", "Electricity", "Gas Bill", "UI/Design", "Technical", "Other"];
+
+  const submit = async () => {
+    if (!f.msg.trim()) { toast$(lang === "bn" ? "মতামত লিখুন।" : "Enter feedback.", "err"); return; }
+    setSub(true);
+    await addFeedback({ id: gid(), userId: user.id, userName: user.name, ...f, date: Date.now() });
+    toast$(lang === "bn" ? "মতামত পাঠানো হয়েছে! ধন্যবাদ 🙏" : "Feedback submitted! Thank you 🙏");
+    setF({ rating: 5, cat: "general", msg: "" }); setSub(false);
+  };
+
+  return (
+    <div className="page">
+      <h1 style={{ fontSize: 28, fontWeight: 900, marginBottom: 20, textAlign: "center" }}>{t.feedback}</h1>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, maxWidth: 900, margin: "0 auto" }} className="grid2">
+        <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "var(--r)", padding: 20 }}>
+          <h3 style={{ fontWeight: 800, marginBottom: 16, fontSize: 16 }}>{t.submitFeedback}</h3>
+          <div style={{ marginBottom: 14 }}>
+            <label style={lblStyle}>{lang === "bn" ? "রেটিং" : "Rating"}</label>
+            <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+              {[1, 2, 3, 4, 5].map(n => (
+                <button key={n} onClick={() => setF({ ...f, rating: n })} style={{ fontSize: 24, background: "none", border: "none", opacity: n <= f.rating ? 1 : .3 }}>⭐</button>
+              ))}
+            </div>
+          </div>
+          <div style={{ marginBottom: 14 }}>
+            <label style={lblStyle}>{lang === "bn" ? "বিষয়" : "Category"}</label>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
+              {cats.map(c => (
+                <button key={c} onClick={() => setF({ ...f, cat: c })} style={{ background: f.cat === c ? "var(--green)" : "var(--bg3)", color: f.cat === c ? "#fff" : "var(--muted)", border: "none", borderRadius: 20, padding: "4px 13px", fontSize: 12, fontWeight: 600 }}>
+                  {c}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div style={{ marginBottom: 14 }}>
+            <label style={lblStyle}>{lang === "bn" ? "মতামত" : "Message"}</label>
+            <textarea value={f.msg} onChange={e => setF({ ...f, msg: e.target.value })} rows={4} placeholder={lang === "bn" ? "আপনার মতামত লিখুন…" : "Write your feedback…"} style={{ resize: "vertical" }} />
+          </div>
+          <Abtn onClick={submit} disabled={sub}>{sub ? (lang === "bn" ? "পাঠানো হচ্ছে…" : "Sending…") : t.submitFeedback}</Abtn>
+        </div>
+        <div>
+          <h3 style={{ fontWeight: 800, marginBottom: 14, fontSize: 16 }}>{t.yourFeedbacks} ({feedbacks.length})</h3>
+          {feedbacks.length === 0 ? <div style={{ color: "var(--muted)", fontSize: 14 }}>{t.noFeedback}</div> : feedbacks.map(fb => (
+            <div key={fb.id} style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "var(--r3)", padding: 14, marginBottom: 10 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                <span style={{ color: "var(--elec)" }}>{"⭐".repeat(fb.rating)}</span>
+                <span style={{ background: "rgba(22,163,74,.1)", color: "var(--green2)", border: "1px solid var(--green)", padding: "2px 8px", borderRadius: 20, fontSize: 11, fontWeight: 700 }}>{fb.cat}</span>
+              </div>
+              <p style={{ margin: "6px 0 4px", fontSize: 13, color: "var(--text)" }}>{fb.msg}</p>
+              <div style={{ fontSize: 11, color: "var(--dim)" }}>{fmtDt(fb.date, lang)}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
