@@ -113,3 +113,70 @@ app.post('/api/auth/login', async (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
+// GET /api/auth/me/:id
+app.get('/api/auth/me/:id', async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ error: 'User not found.' });
+    const u = user.toObject();
+    u.id = u._id; delete u._id; delete u.__v;
+    res.json({ user: u });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// PUT /api/auth/update/:id
+app.put('/api/auth/update/:id', async (req, res) => {
+  try {
+    const { name, phone, district, provider, gasProvider, sanctionedLoad, passwordHash, emailVerified, otp } = req.body;
+    const update = {};
+    if (name !== undefined)          update.name = name;
+    if (phone !== undefined)         update.phone = phone;
+    if (district !== undefined)      update.district = district;
+    if (provider !== undefined)      update.provider = provider;
+    if (gasProvider !== undefined)   update.gasProvider = gasProvider;
+    if (sanctionedLoad !== undefined) update.sanctionedLoad = sanctionedLoad;
+    if (passwordHash !== undefined)  update.passwordHash = passwordHash;
+    if (emailVerified !== undefined) update.emailVerified = emailVerified;
+    if (otp !== undefined)           update.otp = otp;
+    const user = await User.findByIdAndUpdate(req.params.id, update, { new: true });
+    if (!user) return res.status(404).json({ error: 'User not found.' });
+    const u = user.toObject();
+    u.id = u._id; delete u._id; delete u.__v;
+    res.json({ user: u });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── RESET TOKEN ROUTES ────────────────────────────────────────────────
+
+// POST /api/reset/send
+app.post('/api/reset/send', async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) return res.status(404).json({ error: 'Email not registered.' });
+    const token = Math.floor(100000 + Math.random() * 900000).toString();
+    await ResetToken.deleteMany({ email: email.toLowerCase() });
+    await ResetToken.create({ token, userId: user._id, email: email.toLowerCase(), expires: Date.now() + 15 * 60 * 1000 });
+    res.json({ token });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// POST /api/reset/verify
+app.post('/api/reset/verify', async (req, res) => {
+  try {
+    const { token, newPasswordHash } = req.body;
+    const rec = await ResetToken.findOne({ token });
+    if (!rec || Date.now() > rec.expires) return res.status(400).json({ error: 'Invalid or expired OTP.' });
+    await User.findByIdAndUpdate(rec.userId, { passwordHash: newPasswordHash });
+    await ResetToken.deleteOne({ token });
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
