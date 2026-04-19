@@ -875,3 +875,126 @@ function VerifyPage({ user, updateUser, toast$, go, t, lang }) {
     </AuthWrap>
   );
 }
+// ── PROFILE ───────────────────────────────────────────────────────────
+function ProfilePage({ user, updateUser, toast$, go, t, lang }) {
+  const [edit, setEdit] = useState(false);
+  const [f, setF] = useState({ name: user.name, email: user.email, phone: user.phone || "", district: user.district || "", provider: user.provider || "", gasProvider: user.gasProvider || "", sanctionedLoad: user.sanctionedLoad || 2 });
+  const [pwF, setPwF] = useState({ old: "", newP: "", conf: "" });
+  const [tab, setTab] = useState("info");
+
+  const save = async () => {
+    if (!f.name || !f.email || !f.phone) { toast$(lang === "bn" ? "নাম, ইমেইল ও ফোন আবশ্যক।" : "Name, email & phone required.", "err"); return; }
+    await updateUser({ ...user, ...f }); setEdit(false);
+    toast$(lang === "bn" ? "প্রোফাইল আপডেট হয়েছে!" : "Profile updated!");
+  };
+  const changePw = async () => {
+    if (!pwF.old || !pwF.newP) { toast$(lang === "bn" ? "পুরনো ও নতুন পাসওয়ার্ড দিন।" : "Enter old & new password.", "err"); return; }
+    if (pwF.newP !== pwF.conf) { toast$(lang === "bn" ? "নতুন পাসওয়ার্ড মিলছে না।" : "New passwords don't match.", "err"); return; }
+    if (pwF.newP.length < 6) { toast$(lang === "bn" ? "পাসওয়ার্ড কমপক্ষে ৬ অক্ষর।" : "Min 6 chars.", "err"); return; }
+    const oldH = await hashPass(pwF.old);
+    if (oldH !== user.passwordHash) { toast$(lang === "bn" ? "পুরনো পাসওয়ার্ড ভুল।" : "Wrong old password.", "err"); return; }
+    await updateUser({ ...user, passwordHash: await hashPass(pwF.newP) });
+    setPwF({ old: "", newP: "", conf: "" }); toast$(lang === "bn" ? "পাসওয়ার্ড পরিবর্তিত!" : "Password changed!");
+  };
+
+  return (
+    <div className="page">
+      <div style={{ textAlign: "center", marginBottom: 24 }}>
+        <h1 style={{ fontSize: 28, fontWeight: 900 }}>{t.profile}</h1>
+      </div>
+      <div className="profile-grid" style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: 20, maxWidth: 900, margin: "0 auto" }}>
+        {/* Avatar card */}
+        <div>
+          <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "var(--r)", padding: 20, textAlign: "center", marginBottom: 16 }}>
+            <div style={{ width: 72, height: 72, borderRadius: "50%", background: "var(--green)", color: "#fff", fontWeight: 900, fontSize: 28, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 10px" }}>{user.name[0].toUpperCase()}</div>
+            <div style={{ fontWeight: 800, fontSize: 17 }}>{user.name}</div>
+            <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 3 }}>{user.email}</div>
+            {user.phone && <div style={{ fontSize: 13, color: "var(--dim)", marginTop: 3 }}>📞 {user.phone}</div>}
+            {user.district && <div style={{ fontSize: 13, color: "var(--dim)", marginTop: 2 }}>📍 {user.district}</div>}
+            <div style={{ marginTop: 12 }}>
+              {user.emailVerified
+                ? <span style={{ background: "rgba(22,163,74,.12)", color: "var(--green2)", border: "1px solid var(--green)", padding: "3px 10px", borderRadius: 20, fontSize: 12, fontWeight: 700 }}>✓ {lang === "bn" ? "যাচাইকৃত" : "Verified"}</span>
+                : <span style={{ background: "rgba(245,158,11,.12)", color: "var(--elec)", border: "1px solid var(--elec)", padding: "3px 10px", borderRadius: 20, fontSize: 12, fontWeight: 700, cursor: "pointer" }} onClick={() => go("verify")}>⚠ {lang === "bn" ? "যাচাই করুন" : "Verify"}</span>
+              }
+            </div>
+            <div style={{ marginTop: 8, fontSize: 11, color: "var(--dim)" }}>{t.joinDate}: {fmtDt(user.joinDate, lang)}</div>
+          </div>
+          <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "var(--r)", padding: 16 }}>
+            <div style={{ color: "var(--green2)", fontSize: 12, fontWeight: 700, marginBottom: 10 }}>🗄️ DB INFO</div>
+            {[["Engine", "MongoDB Atlas"], ["Password", "SHA-256"], ["ID", user.id.slice(0, 8) + "…"]].map(([k, v]) => (
+              <div key={k} style={{ display: "flex", justifyContent: "space-between", fontSize: 12, padding: "5px 0", borderBottom: "1px solid var(--border)" }}>
+                <span style={{ color: "var(--dim)" }}>{k}</span><span style={{ color: "var(--muted)", fontFamily: "monospace" }}>{v}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Right panel */}
+        <div style={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: "var(--r)", padding: 20 }}>
+          <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
+            {[["info", lang === "bn" ? "তথ্য" : "Info"], ["pw", lang === "bn" ? "পাসওয়ার্ড" : "Password"]].map(([k, l]) => (
+              <button key={k} onClick={() => setTab(k)} style={{ background: tab === k ? "var(--green)" : "var(--bg3)", color: tab === k ? "#fff" : "var(--muted)", border: "none", padding: "8px 18px", borderRadius: "var(--r3)", fontSize: 13, fontWeight: 700 }}>{l}</button>
+            ))}
+          </div>
+          {tab === "info" && (
+            <>
+              {edit ? (
+                <>
+                  <div className="grid2"><Fi label={lang === "bn" ? "নাম" : "Name"} value={f.name} onChange={e => setF({ ...f, name: e.target.value })} /><Fi label={lang === "bn" ? "ফোন" : "Phone"} value={f.phone} onChange={e => setF({ ...f, phone: e.target.value })} /></div>
+                  <div style={{ marginBottom: 14 }}>
+                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--dim)", textTransform: "uppercase", letterSpacing: .6, marginBottom: 6 }}>{lang === "bn" ? "বিদ্যুৎ কোম্পানি" : "Electricity Provider"}</label>
+                    <select value={f.provider} onChange={e => setF({ ...f, provider: e.target.value })}>
+                      <option value="">{lang === "bn" ? "বেছে নিন" : "Select"}</option>
+                      {ELEC_PROVIDERS.map(p => <option key={p.id} value={p.id}>{lang === "bn" ? p.bn : p.en} — {lang === "bn" ? p.areaBn : p.areaEn}</option>)}
+                    </select>
+                  </div>
+                  <div style={{ marginBottom: 14 }}>
+                    <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--dim)", textTransform: "uppercase", letterSpacing: .6, marginBottom: 6 }}>{lang === "bn" ? "গ্যাস কোম্পানি" : "Gas Provider"}</label>
+                    <select value={f.gasProvider} onChange={e => setF({ ...f, gasProvider: e.target.value })}>
+                      <option value="">{lang === "bn" ? "বেছে নিন" : "Select"}</option>
+                      {GAS_PROVIDERS.map(p => <option key={p.id} value={p.id}>{lang === "bn" ? p.bn : p.en}</option>)}
+                    </select>
+                  </div>
+                  <div style={{ marginBottom: 16 }}>
+                    <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "var(--dim)", marginBottom: 8 }}>{t.sanctionedLoad}: {f.sanctionedLoad} kW</label>
+                    <input type="range" min={0.5} max={10} step={0.5} value={f.sanctionedLoad} onChange={e => setF({ ...f, sanctionedLoad: Number(e.target.value) })} style={{ accentColor: "var(--elec)" }} />
+                  </div>
+                  <div style={{ display: "flex", gap: 10 }}>
+                    <button onClick={save} style={{ background: "var(--green)", color: "#fff", border: "none", padding: "10px 20px", borderRadius: "var(--r3)", fontWeight: 700, fontSize: 14 }}>{t.updateProfile}</button>
+                    <button onClick={() => setEdit(false)} style={{ background: "var(--bg3)", color: "var(--muted)", border: "none", padding: "10px 20px", borderRadius: "var(--r3)", fontWeight: 700, fontSize: 14 }}>{lang === "bn" ? "বাতিল" : "Cancel"}</button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {[
+                    [lang === "bn" ? "নাম" : "Name", user.name],
+                    [lang === "bn" ? "ইমেইল" : "Email", user.email],
+                    [lang === "bn" ? "ফোন" : "Phone", user.phone || "-"],
+                    [lang === "bn" ? "জেলা" : "District", user.district || "-"],
+                    [lang === "bn" ? "বিদ্যুৎ কোম্পানি" : "Elec Provider", ELEC_PROVIDERS.find(p => p.id === user.provider)?.[lang === "bn" ? "bn" : "en"] || "-"],
+                    [lang === "bn" ? "গ্যাস কোম্পানি" : "Gas Provider", GAS_PROVIDERS.find(p => p.id === user.gasProvider)?.[lang === "bn" ? "bn" : "en"] || "-"],
+                    [t.sanctionedLoad, `${user.sanctionedLoad || 2} kW`],
+                  ].map(([k, v]) => (
+                    <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid var(--border)", fontSize: 14 }}>
+                      <span style={{ color: "var(--dim)", fontWeight: 600 }}>{k}</span>
+                      <span style={{ color: "var(--text)" }}>{v}</span>
+                    </div>
+                  ))}
+                  <button onClick={() => setEdit(true)} style={{ marginTop: 16, background: "var(--green)", color: "#fff", border: "none", padding: "10px 22px", borderRadius: "var(--r3)", fontWeight: 700, fontSize: 14 }}>{t.updateProfile}</button>
+                </>
+              )}
+            </>
+          )}
+          {tab === "pw" && (
+            <>
+              <Fi label={lang === "bn" ? "পুরনো পাসওয়ার্ড" : "Old Password"} type="password" value={pwF.old} onChange={e => setPwF({ ...pwF, old: e.target.value })} />
+              <Fi label={lang === "bn" ? "নতুন পাসওয়ার্ড" : "New Password"} type="password" value={pwF.newP} onChange={e => setPwF({ ...pwF, newP: e.target.value })} />
+              <Fi label={lang === "bn" ? "নিশ্চিত" : "Confirm"} type="password" value={pwF.conf} onChange={e => setPwF({ ...pwF, conf: e.target.value })} />
+              <Abtn onClick={changePw}>{t.changePassword}</Abtn>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
